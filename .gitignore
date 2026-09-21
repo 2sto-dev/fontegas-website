@@ -1,7 +1,15 @@
-# Ignore everything by default so only the React app is published
+# Ignore everything by default so only the project files we need are tracked
 *
 
-# Keep the frontend app and Git metadata
+# Keep the source files we want in Git
+!backend/
+!backend/**
 !frontend/
 !frontend/**
 !.gitignore
+!.env.example
+
+# Ignore secrets and local environment files
+.env
+.env.*
+!.env.example
