@@ -1,0 +1,7 @@
+# Ignore everything by default so only the React app is published
+*
+
+# Keep the frontend app and Git metadata
+!frontend/
+!frontend/**
+!.gitignore
