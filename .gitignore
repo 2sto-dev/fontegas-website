@@ -9,6 +9,12 @@
 !.gitignore
 !.env.example
 
+# Ignore build output and local dependency folders
+node_modules/
+dist/
+**/node_modules/
+**/dist/
+
 # Ignore secrets and local environment files
 .env
 .env.*
