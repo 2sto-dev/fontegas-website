@@ -1,0 +1,31 @@
+CREATE DATABASE IF NOT EXISTS fontegas_db
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE fontegas_db;
+
+CREATE TABLE IF NOT EXISTS leads (
+  id INT NOT NULL AUTO_INCREMENT,
+  company_name VARCHAR(255) DEFAULT NULL,
+  contact_name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(50) DEFAULT NULL,
+  requirement TEXT NOT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS documents (
+  id INT NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  category VARCHAR(100) NOT NULL DEFAULT 'general',
+  file_name VARCHAR(255) NOT NULL,
+  file_type VARCHAR(50) DEFAULT 'pdf',
+  is_published TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_documents_file_name (file_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_documents_category ON documents (category);
