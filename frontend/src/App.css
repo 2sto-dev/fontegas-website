@@ -378,6 +378,8 @@
 
 .service-card,
 .feature-card {
+  display: flex;
+  flex-direction: column;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(17, 52, 46, 0.08);
   border-radius: 22px;
@@ -420,9 +422,14 @@
   margin: 0;
 }
 
+.service-card p {
+  flex: 1;
+  margin-bottom: 1rem;
+}
+
 .service-card a {
   display: inline-block;
-  margin-top: 1rem;
+  margin-top: auto;
   color: #d72f2f;
   font-weight: 700;
   text-decoration: none;
