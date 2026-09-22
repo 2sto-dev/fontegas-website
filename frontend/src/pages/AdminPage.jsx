@@ -30,7 +30,7 @@ function AdminPage() {
   const [editingId, setEditingId] = useState(null)
   const [editingState, setEditingState] = useState({ title: '', category: 'documente' })
   const [token, setToken] = useState(localStorage.getItem('fontegas_admin_token') || '')
-  const [formState, setFormState] = useState({ username: 'fontegas_admin', password: '' })
+  const [formState, setFormState] = useState({ username: '', password: '' })
   const [loginLoading, setLoginLoading] = useState(false)
   const fileInputRef = useRef(null)
 
@@ -330,8 +330,8 @@ function AdminPage() {
                 type="text"
                 value={formState.username}
                 onChange={(event) => setFormState((current) => ({ ...current, username: event.target.value }))}
+                placeholder="Introdu utilizatorul"
                 style={{ ...inputStyle, background: '#f8fafc' }}
-                readOnly
               />
             </label>
 
