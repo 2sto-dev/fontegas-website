@@ -3,21 +3,31 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
+import multer from 'multer'
+import jwt from 'jsonwebtoken'
 import mysql from 'mysql2/promise'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import { normalizeCategory, sanitizeDocumentFileName } from './document-utils.js'
+import { hashPassword, verifyPassword } from './admin-auth.js'
 
 dotenv.config()
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const PROJECT_ROOT = path.resolve(__dirname, '..')
+const FILE_STORAGE_DIR = path.join(PROJECT_ROOT, 'uploads')
+fs.mkdirSync(FILE_STORAGE_DIR, { recursive: true })
 
 const app = express()
 const port = Number(process.env.PORT || 5000)
 const isProduction = process.env.NODE_ENV === 'production'
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173').split(',').map((origin) => origin.trim()).filter(Boolean)
+const ADMIN_USERNAME = process.env.FONTEGAS_ADMIN_USERNAME || 'fontegas'
+const ADMIN_PASSWORD = process.env.FONTEGAS_ADMIN_PASSWORD || 'Zx7!mP9&dQ2@vN5$L'
+const JWT_SECRET = process.env.JWT_SECRET || 'fontegas-jwt-secret-change-me-in-production'
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -54,12 +64,40 @@ app.use(
       callback(new Error('Origin not allowed by CORS'))
     },
     credentials: false,
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 )
 
 app.use(express.json({ limit: '1mb' }))
+
+const fileStorage = multer.diskStorage({
+  destination: (_req, _file, callback) => {
+    callback(null, FILE_STORAGE_DIR)
+  },
+  filename: (_req, file, callback) => {
+    const safeName = sanitizeDocumentFileName(file.originalname || 'document')
+    callback(null, `${Date.now()}-${safeName}`)
+  },
+})
+
+const upload = multer({
+  storage: fileStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+  fileFilter: (_req, file, callback) => {
+    const allowedExtensions = new Set(['.pdf', '.doc', '.docx'])
+    const extension = path.extname(file.originalname || '').toLowerCase()
+
+    if (!allowedExtensions.has(extension)) {
+      callback(new Error('Tip de fișier nepermis.'))
+      return
+    }
+
+    callback(null, true)
+  },
+})
 
 const formLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -92,6 +130,25 @@ const isValidPhone = (value) => {
 const parsePositiveInt = (value) => {
   const parsed = Number(value)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+const signAdminToken = (username = ADMIN_USERNAME) => jwt.sign({ username, role: 'admin' }, JWT_SECRET, { expiresIn: '8h' })
+
+const requireAdminAuth = (req, res, next) => {
+  const authorization = String(req.headers.authorization || '')
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : ''
+
+  if (!token) {
+    return res.status(401).json({ ok: false, message: 'Autentificare necesară.' })
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    req.admin = decoded
+    return next()
+  } catch (error) {
+    return res.status(401).json({ ok: false, message: 'Token invalid sau expirat.' })
+  }
 }
 
 const resolveFullName = (...parts) =>
@@ -138,6 +195,37 @@ const ensureTableExists = async () => {
       UNIQUE KEY uq_documents_file_name (file_name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id INT NOT NULL AUTO_INCREMENT,
+      username VARCHAR(80) NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uq_admin_users_username (username)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `)
+}
+
+const ensureAdminUserRecord = async () => {
+  const passwordHash = await hashPassword(ADMIN_PASSWORD)
+
+  await pool.execute(
+    `
+      INSERT INTO admin_users (username, password_hash)
+      VALUES (?, ?)
+      ON DUPLICATE KEY UPDATE
+        password_hash = VALUES(password_hash),
+        updated_at = CURRENT_TIMESTAMP
+    `,
+    [ADMIN_USERNAME, passwordHash],
+  )
+
+  if (ADMIN_USERNAME !== 'fontegas_admin') {
+    await pool.execute("DELETE FROM admin_users WHERE username = 'fontegas_admin'")
+  }
 }
 
 const normalizeDocumentTitle = (fileName) =>
@@ -241,7 +329,45 @@ app.use((err, req, res, next) => {
   return res.status(500).json({ ok: false, message: 'Internal server error.' })
 })
 
-app.get('/api/requests', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const username = trimText(req.body?.username || '', 80)
+    const password = String(req.body?.password || '')
+
+    if (!username || !password) {
+      return res.status(400).json({ ok: false, message: 'Username și parola sunt obligatorii.' })
+    }
+
+    const [userRows] = await pool.execute(
+      'SELECT username, password_hash AS passwordHash FROM admin_users WHERE username = ? LIMIT 1',
+      [username],
+    )
+
+    if (userRows.length === 0) {
+      return res.status(401).json({ ok: false, message: 'Date de autentificare incorecte.' })
+    }
+
+    const storedUser = userRows[0]
+    const isPasswordValid = await verifyPassword(password, storedUser.passwordHash)
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ ok: false, message: 'Date de autentificare incorecte.' })
+    }
+
+    return res.json({
+      ok: true,
+      token: signAdminToken(storedUser.username),
+      user: {
+        username: storedUser.username,
+        role: 'admin',
+      },
+    })
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: 'Autentificarea a eșuat.', error: error.message })
+  }
+})
+
+app.get('/api/requests', requireAdminAuth, async (req, res) => {
   try {
     const sortValue = String(req.query.sort || 'newest')
     const search = trimText(req.query.search || '', 80)
@@ -274,7 +400,7 @@ app.get('/api/requests', async (req, res) => {
   }
 })
 
-app.delete('/api/requests/:id', async (req, res) => {
+app.delete('/api/requests/:id', requireAdminAuth, async (req, res) => {
   try {
     const id = parsePositiveInt(req.params.id)
 
@@ -358,6 +484,161 @@ app.get('/api/documents', async (req, res) => {
   }
 })
 
+app.get('/api/documents/admin', requireAdminAuth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, title, category, file_name AS fileName, file_type AS fileType, is_published AS isPublished, created_at AS createdAt FROM documents ORDER BY created_at DESC',
+    )
+
+    return res.json({
+      ok: true,
+      data: rows.map((item) => ({
+        ...item,
+        downloadUrl: `/files/${encodeURIComponent(item.fileName)}`,
+      })),
+    })
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: 'Nu s-au putut încărca documentele din admin.',
+      error: error.message,
+    })
+  }
+})
+
+app.post('/api/documents', requireAdminAuth, upload.single('file'), async (req, res) => {
+  try {
+    const uploadedFile = req.file
+
+    if (!uploadedFile) {
+      return res.status(400).json({ ok: false, message: 'Selectați un fișier pentru upload.' })
+    }
+
+    const title = trimText(req.body.title || '', 255) || normalizeDocumentTitle(path.basename(uploadedFile.originalname, path.extname(uploadedFile.originalname)))
+    const category = normalizeCategory(req.body.category || 'documente')
+    const isPublished = String(req.body.isPublished ?? 'true').toLowerCase() === 'false' ? 0 : 1
+    const fileName = uploadedFile.filename
+    const fileType = path.extname(uploadedFile.originalname || uploadedFile.filename).replace('.', '').toLowerCase() || 'pdf'
+
+    const [result] = await pool.execute(
+      'INSERT INTO documents (title, category, file_name, file_type, is_published) VALUES (?, ?, ?, ?, ?)',
+      [title, category, fileName, fileType, isPublished],
+    )
+
+    return res.status(201).json({
+      ok: true,
+      message: 'Documentul a fost încărcat cu succes.',
+      data: {
+        id: result.insertId,
+        title,
+        category,
+        fileName,
+        fileType,
+        isPublished,
+        createdAt: new Date().toISOString(),
+        downloadUrl: `/files/${encodeURIComponent(fileName)}`,
+      },
+    })
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: 'A apărut o eroare la încărcarea documentului.',
+      error: error.message,
+    })
+  }
+})
+
+app.put('/api/documents/:id', requireAdminAuth, async (req, res) => {
+  try {
+    const id = parsePositiveInt(req.params.id)
+
+    if (!id) {
+      return res.status(400).json({ ok: false, message: 'ID invalid.' })
+    }
+
+    const [existingRows] = await pool.execute('SELECT id, title, category, file_name AS fileName, file_type AS fileType, is_published AS isPublished FROM documents WHERE id = ?', [id])
+
+    if (existingRows.length === 0) {
+      return res.status(404).json({ ok: false, message: 'Documentul nu a fost găsit.' })
+    }
+
+    const current = existingRows[0]
+    const title = trimText(req.body.title || current.title, 255)
+    const category = normalizeCategory(req.body.category || current.category)
+    const isPublished = [0, 1].includes(Number(req.body.isPublished ?? current.isPublished))
+      ? Number(req.body.isPublished ?? current.isPublished)
+      : Number(current.isPublished)
+
+    await pool.execute(
+      'UPDATE documents SET title = ?, category = ?, is_published = ? WHERE id = ?',
+      [title, category, isPublished, id],
+    )
+
+    return res.json({
+      ok: true,
+      message: 'Documentul a fost actualizat.',
+      data: {
+        ...current,
+        title,
+        category,
+        isPublished,
+      },
+    })
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: 'A apărut o eroare la actualizarea documentului.',
+      error: error.message,
+    })
+  }
+})
+
+app.delete('/api/documents/:id', requireAdminAuth, async (req, res) => {
+  try {
+    const id = parsePositiveInt(req.params.id)
+
+    if (!id) {
+      return res.status(400).json({ ok: false, message: 'ID invalid.' })
+    }
+
+    const [rows] = await pool.execute('SELECT file_name AS fileName FROM documents WHERE id = ?', [id])
+
+    if (rows.length === 0) {
+      return res.status(404).json({ ok: false, message: 'Documentul nu a fost găsit.' })
+    }
+
+    const fileName = rows[0].fileName
+    const [result] = await pool.execute('DELETE FROM documents WHERE id = ?', [id])
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ ok: false, message: 'Documentul nu a fost găsit.' })
+    }
+
+    const candidatePaths = [
+      path.join(FILE_STORAGE_DIR, fileName),
+      path.join(PROJECT_ROOT, fileName),
+    ]
+
+    for (const candidatePath of candidatePaths) {
+      try {
+        if (fs.existsSync(candidatePath)) {
+          fs.unlinkSync(candidatePath)
+        }
+      } catch (deleteError) {
+        console.warn('Unable to delete uploaded document file:', deleteError.message)
+      }
+    }
+
+    return res.json({ ok: true, message: 'Documentul a fost șters.' })
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: 'A apărut o eroare la ștergerea documentului.',
+      error: error.message,
+    })
+  }
+})
+
 app.get('/files/:fileName', (req, res) => {
   try {
     const rawName = decodeURIComponent(req.params.fileName || '')
@@ -368,7 +649,9 @@ app.get('/files/:fileName', (req, res) => {
       return res.status(400).json({ ok: false, message: 'Tip de fișier nepermis.' })
     }
 
-    const safeFilePath = path.join(PROJECT_ROOT, rawName)
+    const legacyPath = path.resolve(PROJECT_ROOT, rawName)
+    const uploadedPath = path.resolve(FILE_STORAGE_DIR, rawName)
+    const safeFilePath = fs.existsSync(uploadedPath) ? uploadedPath : legacyPath
 
     if (!safeFilePath.startsWith(PROJECT_ROOT) || !fs.existsSync(safeFilePath)) {
       return res.status(404).json({ ok: false, message: 'Fișierul nu a fost găsit.' })
@@ -526,6 +809,7 @@ app.post('/api/lead', async (req, res) => {
 const startServer = async () => {
   try {
     await ensureTableExists()
+    await ensureAdminUserRecord()
     await seedProjectDocuments()
   } catch (error) {
     console.warn('Database bootstrap unavailable; continuing with filesystem-backed document mode.', error.message)

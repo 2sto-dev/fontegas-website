@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import '../App.css'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 const emergencyHighlights = [
   { label: 'Locație', value: 'Simian, județul Mehedinți' },
   { label: 'Telefon', value: '+40 252 338310' },
@@ -109,6 +111,15 @@ function PlanUrgentaPage() {
                 </div>
               ))}
             </div>
+
+            <a
+              href={`${API_URL}/files/PLAN-DE-URGENTA-INTERNA.doc`}
+              target="_blank"
+              rel="noreferrer"
+              className="panel-download-link"
+            >
+              Descarcă planul de urgență
+            </a>
           </div>
         </section>
 
@@ -175,16 +186,7 @@ function PlanUrgentaPage() {
         </section>
 
         <section className="container emergency-doc-section">
-          <div className="document-panel" style={{ display: 'grid', gap: 20 }}>
-            <div className="document-copy">
-              <span className="eyebrow">Responsabilitate</span>
-              <h2>Documente relevante în proiect.</h2>
-              <p>
-                Documentele de siguranță, inspecție și urgență ale proiectului sunt disponibile în
-                secțiunea dedicată „Documente”, pentru consultare rapidă și verificarea procedurilor.
-              </p>
-            </div>
-
+          <div className="document-panel document-panel--metrics-only">
             <div className="document-metrics">
               <div>
                 <strong>100%</strong>

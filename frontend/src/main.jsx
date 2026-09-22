@@ -20,7 +20,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/plan-de-urgenta" element={<PlanUrgentaPage />} />
         <Route path="/documente" element={<DocumentsPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/fontegas" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

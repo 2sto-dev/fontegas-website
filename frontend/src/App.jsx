@@ -160,11 +160,6 @@ function App() {
             <div className="image-frame">
               <img src="/general.jpg" alt="Statie de gaz și distribuție" />
             </div>
-            <div className="floating-card">
-              <span>Statie proprie</span>
-              <strong>2 rezervoare de 400 mc</strong>
-              <small>+ instalație de stocare de 100 mc</small>
-            </div>
           </div>
         </section>
 
@@ -196,7 +191,7 @@ function App() {
 
         <section className="about container" id="despre">
           <div className="about__image">
-            <img src="/statia.jpg" alt="Stație de stocare și distribuție" />
+            <img src="/fontegas.jpeg" alt="Imagine Fontegas" />
           </div>
 
           <div className="about__content">

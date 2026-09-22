@@ -27,5 +27,15 @@ CREATE TABLE IF NOT EXISTS documents (
   UNIQUE KEY uq_documents_file_name (file_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_documents_category ON documents (category);
+CREATE TABLE IF NOT EXISTS admin_users (
+  id INT NOT NULL AUTO_INCREMENT,
+  username VARCHAR(80) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_admin_users_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_leads_created_at ON leads (created_at DESC);
+CREATE INDEX idx_documents_category ON documents (category);
