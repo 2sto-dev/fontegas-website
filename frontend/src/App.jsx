@@ -6,7 +6,7 @@ const navItems = [
   { label: 'Acasă', href: '#home' },
   { label: 'Despre noi', href: '#despre' },
   { label: 'Servicii', href: '#servicii' },
-  { label: 'Produse', href: '#produse' },
+  { label: 'Avantaje', href: '#produse' },
   { label: 'Oferta', to: '/oferta' },
   { label: 'Util', to: '/util' },
   { label: 'Plan de urgență', to: '/plan-de-urgenta' },

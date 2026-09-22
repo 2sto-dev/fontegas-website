@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import '../App.css'
 
@@ -11,6 +12,8 @@ const utilPoints = [
 ]
 
 function UtilPage() {
+  const [menuOpen, setMenuOpen] = useState(false)
+
   return (
     <div className="site-shell">
       <header className="site-header">
@@ -26,12 +29,24 @@ function UtilPage() {
             <img src="/SIGLA.jpg" alt="Logo Fontegas" />
           </Link>
 
-          <nav className="main-nav is-open" aria-label="Meniu principal">
-            <Link to="/">Acasă</Link>
-            <Link to="/oferta">Oferta</Link>
-            <Link to="/util">Util</Link>
-            <Link to="/plan-de-urgenta">Plan de urgență</Link>
-            <Link to="/documente">Documente</Link>
+          <button
+            type="button"
+            className="menu-toggle"
+            aria-expanded={menuOpen}
+            aria-label="Deschide meniul"
+            onClick={() => setMenuOpen((value) => !value)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+
+          <nav className={`main-nav ${menuOpen ? 'is-open' : ''}`} aria-label="Meniu principal">
+            <Link to="/" onClick={() => setMenuOpen(false)}>Acasă</Link>
+            <Link to="/oferta" onClick={() => setMenuOpen(false)}>Oferta</Link>
+            <Link to="/util" onClick={() => setMenuOpen(false)}>Util</Link>
+            <Link to="/plan-de-urgenta" onClick={() => setMenuOpen(false)}>Plan de urgență</Link>
+            <Link to="/documente" onClick={() => setMenuOpen(false)}>Documente</Link>
           </nav>
 
           <Link className="contact-pill" to="/contact">

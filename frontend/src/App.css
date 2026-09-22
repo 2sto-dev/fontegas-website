@@ -1507,6 +1507,8 @@
 @media (max-width: 760px) {
   .menu-toggle {
     display: flex;
+    position: relative;
+    z-index: 20;
   }
 
   .main-nav {
@@ -1514,6 +1516,9 @@
     top: calc(100% + 12px);
     left: 0;
     right: 0;
+    z-index: 10;
+    max-height: min(70vh, 480px);
+    overflow-y: auto;
     background: rgba(255, 255, 255, 0.96);
     border: 1px solid rgba(17, 52, 46, 0.08);
     border-radius: 20px;
@@ -1526,6 +1531,7 @@
     transform: translateY(-10px);
     transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
     backdrop-filter: blur(12px);
+    -webkit-overflow-scrolling: touch;
   }
 
   .main-nav.is-open {
