@@ -19,3 +19,13 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Document files required by the database deployment snapshot
+!/model-inf-publica.pdf
+!/PLAN-DE-URGENTA-INTERNA.doc
+!/raport inspectie 23.05.2025.pdf
+!/raport-securitate-2020-2.pdf
+!/raport-securitate-2020.pdf
+!/raport_inspectie.docx
+!/raport_inspectie_seveso.pdf
+!/svso2026.pdf
