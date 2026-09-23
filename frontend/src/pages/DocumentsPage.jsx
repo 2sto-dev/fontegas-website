@@ -1,8 +1,7 @@
+import { apiFetch, apiUrl } from '../api.jsx'
+import Menu from '../components/menu.jsx'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import '../App.css'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const categoryLabels = {
   all: 'Toate',
@@ -13,7 +12,6 @@ const categoryLabels = {
 }
 
 function DocumentsPage() {
-  const [menuOpen, setMenuOpen] = useState(false)
   const [documents, setDocuments] = useState([])
   const [activeCategory, setActiveCategory] = useState('all')
   const [sortBy, setSortBy] = useState('date-desc')
@@ -24,7 +22,7 @@ function DocumentsPage() {
     const loadDocuments = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`${API_URL}/api/documents`)
+        const response = await apiFetch(`/api/documents`)
         const result = await response.json()
 
         if (!response.ok) {
@@ -88,48 +86,11 @@ function DocumentsPage() {
 
   return (
     <div className="site-shell">
-      <header className="site-header">
-        <div className="top-strip">
-          <div className="container top-strip__inner">
-            <span>România · Județul Mehedinți · Simian, E70</span>
-            <span>Tel: 00-40-252-338310</span>
-          </div>
-        </div>
-
-        <div className="container nav-wrap">
-          <Link to="/" className="brand" aria-label="Pagina principală Fontegas">
-            <img src="/SIGLA.jpg" alt="Logo Fontegas" />
-          </Link>
-
-          <button
-            type="button"
-            className="menu-toggle"
-            aria-expanded={menuOpen}
-            aria-label="Deschide meniul"
-            onClick={() => setMenuOpen((value) => !value)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
-
-          <nav className={`main-nav ${menuOpen ? 'is-open' : ''}`} aria-label="Meniu principal">
-            <Link to="/" onClick={() => setMenuOpen(false)}>Acasă</Link>
-            <Link to="/oferta" onClick={() => setMenuOpen(false)}>Oferta</Link>
-            <Link to="/util" onClick={() => setMenuOpen(false)}>Util</Link>
-            <Link to="/plan-de-urgenta" onClick={() => setMenuOpen(false)}>Plan de urgență</Link>
-            <Link to="/documente" onClick={() => setMenuOpen(false)}>Documente</Link>
-          </nav>
-
-          <Link className="contact-pill" to="/contact">
-            Contact
-          </Link>
-        </div>
-      </header>
+      <Menu />
 
       <a
         className="whatsapp-float"
-        href="https://wa.me/40252338310?text=Salut%20v%C4%83%20scriu%20din%20site-ul%20dvs.%20%C8%99i%20a%C8%99%20dori%20mai%20multe%20informa%C8%9Bii."
+        href="https://wa.me/40731315780?text=Salut%20v%C4%83%20scriu%20din%20site-ul%20dvs.%20%C8%99i%20a%C8%99%20dori%20mai%20multe%20informa%C8%9Bii."
         target="_blank"
         rel="noreferrer"
         aria-label="Deschide conversația WhatsApp"
@@ -211,7 +172,7 @@ function DocumentsPage() {
 
                   <div className="document-card__actions">
                     <a
-                      href={`${API_URL}${item.downloadUrl}`}
+                      href={apiUrl(item.downloadUrl)}
                       target="_blank"
                       rel="noreferrer"
                       className="document-card__link"
@@ -219,7 +180,7 @@ function DocumentsPage() {
                       Descarcă
                     </a>
                     <a
-                      href={`${API_URL}${item.downloadUrl}`}
+                      href={apiUrl(item.downloadUrl)}
                       target="_blank"
                       rel="noreferrer"
                       className="document-card__ghost"

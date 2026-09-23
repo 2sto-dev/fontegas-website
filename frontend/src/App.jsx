@@ -1,17 +1,6 @@
-import { useState } from 'react'
+import Menu from './components/menu.jsx'
 import { Link } from 'react-router-dom'
 import './App.css'
-
-const navItems = [
-  { label: 'Acasă', href: '#home' },
-  { label: 'Despre noi', href: '#despre' },
-  { label: 'Servicii', href: '#servicii' },
-  { label: 'Avantaje', href: '#produse' },
-  { label: 'Oferta', to: '/oferta' },
-  { label: 'Util', to: '/util' },
-  { label: 'Plan de urgență', to: '/plan-de-urgenta' },
-  { label: 'Documente', to: '/documente' },
-]
 
 const stats = [
   { label: 'Ani de experiență', value: '10+' },
@@ -66,59 +55,15 @@ const differentiators = [
 const trustPoints = ['GPL auto', 'Distribuție locală', 'Stocare sigură', 'Consultanță tehnică']
 
 function App() {
-  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <div className="site-shell">
-      <header className="site-header" id="home">
-        <div className="top-strip">
-          <div className="container top-strip__inner">
-            <span>România · Județul Mehedinți · Simian, E70</span>
-            <span>Tel: 00-40-252-338310</span>
-          </div>
-        </div>
-
-        <div className="container nav-wrap">
-          <a href="#home" className="brand" aria-label="Pagina principală Fontegas">
-            <img src="/SIGLA.jpg" alt="Logo Fontegas" />
-          </a>
-
-          <button
-            type="button"
-            className="menu-toggle"
-            aria-expanded={menuOpen}
-            aria-label="Deschide meniul"
-            onClick={() => setMenuOpen((value) => !value)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
-
-          <nav className={`main-nav ${menuOpen ? 'is-open' : ''}`}>
-            {navItems.map((item) =>
-              item.to ? (
-                <Link key={item.label} to={item.to} onClick={() => setMenuOpen(false)}>
-                  {item.label}
-                </Link>
-              ) : (
-                <a key={item.label} href={item.href} onClick={() => setMenuOpen(false)}>
-                  {item.label}
-                </a>
-              ),
-            )}
-          </nav>
-
-          <Link className="contact-pill" to="/contact">
-            Contact
-          </Link>
-        </div>
-      </header>
+      <Menu home />
 
       <main>
         <a
           className="whatsapp-float"
-          href="https://wa.me/40252338310?text=Salut%20v%C4%83%20scriu%20din%20site-ul%20dvs.%20%C8%99i%20a%C8%99%20dori%20mai%20multe%20informa%C8%9Bii."
+          href="https://wa.me/40731315780?text=Salut%20v%C4%83%20scriu%20din%20site-ul%20dvs.%20%C8%99i%20a%C8%99%20dori%20mai%20multe%20informa%C8%9Bii."
           target="_blank"
           rel="noreferrer"
           aria-label="Deschide conversația WhatsApp"
@@ -246,8 +191,8 @@ function App() {
           </div>
 
           <div className="cta-banner__actions">
-            <a className="btn btn--primary" href="tel:+40252338310">
-              +40 252 338310
+            <a className="btn btn--primary" href="tel:+40731315780">
+              0731 315 780
             </a>
             <Link className="btn btn--secondary" to="/contact">
               Contactează-ne

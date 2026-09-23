@@ -4,7 +4,7 @@ import dotenv from 'dotenv'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import multer from 'multer'
-import jwt from 'jsonwebtoken'
+import { createAdminAuth } from './jwt-auth.js'
 import mysql from 'mysql2/promise'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -27,7 +27,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173').split(',').map((origin) => origin.trim()).filter(Boolean)
 const ADMIN_USERNAME = process.env.FONTEGAS_ADMIN_USERNAME || 'fontegas'
 const ADMIN_PASSWORD = process.env.FONTEGAS_ADMIN_PASSWORD || 'Zx7!mP9&dQ2@vN5$L'
-const JWT_SECRET = process.env.JWT_SECRET || 'fontegas-jwt-secret-change-me-in-production'
+const JWT_SECRET = process.env.JWT_SECRET
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -132,24 +132,7 @@ const parsePositiveInt = (value) => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
 }
 
-const signAdminToken = (username = ADMIN_USERNAME) => jwt.sign({ username, role: 'admin' }, JWT_SECRET, { expiresIn: '8h' })
-
-const requireAdminAuth = (req, res, next) => {
-  const authorization = String(req.headers.authorization || '')
-  const token = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : ''
-
-  if (!token) {
-    return res.status(401).json({ ok: false, message: 'Autentificare necesară.' })
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET)
-    req.admin = decoded
-    return next()
-  } catch (error) {
-    return res.status(401).json({ ok: false, message: 'Token invalid sau expirat.' })
-  }
-}
+const { signAdminToken, requireAdminAuth } = createAdminAuth(JWT_SECRET)
 
 const resolveFullName = (...parts) =>
   parts
@@ -329,6 +312,11 @@ app.use((err, req, res, next) => {
   return res.status(500).json({ ok: false, message: 'Internal server error.' })
 })
 
+app.get('/api/auth/me', requireAdminAuth, (req, res) => {
+  res.set('Cache-Control', 'no-store')
+  res.json({ ok: true, user: { username: req.admin.username, role: req.admin.role }, expiresAt: req.admin.exp })
+})
+
 app.post('/api/auth/login', async (req, res) => {
   try {
     const username = trimText(req.body?.username || '', 80)
@@ -433,7 +421,7 @@ app.delete('/api/requests/:id', requireAdminAuth, async (req, res) => {
   }
 })
 
-app.delete('/api/leads/:id', async (req, res) => {
+app.delete('/api/leads/:id', requireAdminAuth, async (req, res) => {
   try {
     const id = parsePositiveInt(req.params.id)
 
@@ -663,7 +651,7 @@ app.get('/files/:fileName', (req, res) => {
   }
 })
 
-app.get('/api/leads', async (req, res) => {
+app.get('/api/leads', requireAdminAuth, async (req, res) => {
   try {
     const sortValue = String(req.query.sort || 'newest')
     const search = trimText(req.query.search || '', 80)

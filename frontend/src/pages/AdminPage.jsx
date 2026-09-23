@@ -1,6 +1,7 @@
+import { Navigate } from 'react-router-dom'
+import { setToken, useToken } from '../auth.js'
+import { apiFetch } from '../api.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const categoryOptions = [
   'documente',
@@ -16,7 +17,7 @@ const formatDate = (value) => {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString('ro-RO')
 }
 
-function AdminPage() {
+function AdminPage({ loginOnly = false }) {
   const [requests, setRequests] = useState([])
   const [documents, setDocuments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -29,20 +30,10 @@ function AdminPage() {
   const [uploading, setUploading] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editingState, setEditingState] = useState({ title: '', category: 'documente' })
-  const [token, setToken] = useState(localStorage.getItem('fontegas_admin_token') || '')
+  const token = useToken()
   const [formState, setFormState] = useState({ username: '', password: '' })
   const [loginLoading, setLoginLoading] = useState(false)
   const fileInputRef = useRef(null)
-
-  const getAuthHeaders = (extraHeaders = {}) => {
-    const headers = { ...extraHeaders }
-
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
-
-    return headers
-  }
 
   const loadDashboardData = async () => {
     try {
@@ -50,13 +41,11 @@ function AdminPage() {
       setError('')
 
       const [requestsResponse, documentsResponse] = await Promise.all([
-        fetch(`${API_URL}/api/requests`, { headers: getAuthHeaders() }),
-        fetch(`${API_URL}/api/documents/admin`, { headers: getAuthHeaders() }),
+        apiFetch(`/api/requests`, { auth: true }),
+        apiFetch(`/api/documents/admin`, { auth: true }),
       ])
 
       if (requestsResponse.status === 401 || documentsResponse.status === 401) {
-        setToken('')
-        localStorage.removeItem('fontegas_admin_token')
         return
       }
 
@@ -81,13 +70,13 @@ function AdminPage() {
   }
 
   useEffect(() => {
-    if (!token) {
+    if (!token || loginOnly) {
       setLoading(false)
       return
     }
 
     loadDashboardData()
-  }, [token])
+  }, [token, loginOnly])
 
   const handleDeleteRequest = async (id) => {
     if (!window.confirm('Ștergi definitiv această cerere?')) {
@@ -95,9 +84,9 @@ function AdminPage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/requests/${id}`, {
+      const response = await apiFetch(`/api/requests/${id}`, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        auth: true,
       })
 
       const result = await response.json()
@@ -119,9 +108,9 @@ function AdminPage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/documents/${id}`, {
+      const response = await apiFetch(`/api/documents/${id}`, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        auth: true,
       })
 
       const result = await response.json()
@@ -155,9 +144,9 @@ function AdminPage() {
       formData.append('title', documentTitle.trim())
       formData.append('category', documentCategory)
 
-      const response = await fetch(`${API_URL}/api/documents`, {
+      const response = await apiFetch(`/api/documents`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        auth: true,
         body: formData,
       })
 
@@ -187,10 +176,10 @@ function AdminPage() {
       setError('')
       setStatusMessage('')
 
-      const response = await fetch(`${API_URL}/api/documents/${id}`, {
+      const response = await apiFetch(`/api/documents/${id}`, {
         method: 'PUT',
+        auth: true,
         headers: {
-          ...getAuthHeaders(),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -264,7 +253,7 @@ function AdminPage() {
       setLoginLoading(true)
       setError('')
 
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      const response = await apiFetch(`/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -282,7 +271,6 @@ function AdminPage() {
       }
 
       setToken(result.token)
-      localStorage.setItem('fontegas_admin_token', result.token)
       setFormState((current) => ({ ...current, password: '' }))
       setStatusMessage('Autentificare reușită.')
     } catch (err) {
@@ -294,7 +282,6 @@ function AdminPage() {
 
   const handleLogout = () => {
     setToken('')
-    localStorage.removeItem('fontegas_admin_token')
     setRequests([])
     setDocuments([])
     setStatusMessage('')
@@ -313,7 +300,9 @@ function AdminPage() {
 
   const publishedDocumentCount = documents.filter((item) => Number(item.isPublished) === 1).length
 
-  if (!token) {
+  if (loginOnly && token) return <Navigate to="/fontegas" replace />
+
+  if (loginOnly || !token) {
     return (
       <div style={pageStyle}>
         <div style={loginCardStyle}>
