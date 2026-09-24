@@ -105,10 +105,6 @@ function DocumentsPage() {
           <div className="documents-page-header">
             <span className="eyebrow">Documente</span>
             <h1>Fișiere oficiale și documente de lucru.</h1>
-            <p>
-              Aici găsiți documentele relevante ale proiectului, organizate pe categorii pentru o
-              navigare rapidă și clară.
-            </p>
           </div>
         </section>
 

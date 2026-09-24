@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Panoul de administrare nu are ce cauta in indexul motoarelor de cautare.
+Disallow: /fontegas
+Disallow: /fontegas/login
+Disallow: /api/
+
+Sitemap: https://fontegas-info.ro/sitemap.xml

@@ -1517,7 +1517,7 @@
     left: 0;
     right: 0;
     z-index: 10;
-    max-height: min(70vh, 480px);
+    max-height: min(80vh, 640px);
     overflow-y: auto;
     background: rgba(255, 255, 255, 0.96);
     border: 1px solid rgba(17, 52, 46, 0.08);
@@ -1530,7 +1530,6 @@
     visibility: hidden;
     transform: translateY(-10px);
     transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
-    backdrop-filter: blur(12px);
     -webkit-overflow-scrolling: touch;
   }
 
@@ -1688,5 +1687,209 @@
 
   .contact-form {
     padding: 1.25rem;
+  }
+}
+
+/* Telefonul din bara de sus e link, dar pastreaza culoarea barii. */
+.top-strip__inner a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.top-strip__inner a:hover,
+.top-strip__inner a:focus-visible {
+  text-decoration: underline;
+}
+
+/* Pagina curenta este marcata in meniu. */
+.main-nav a[aria-current='page'] {
+  color: #d72f2f;
+  opacity: 1;
+}
+
+.main-nav a[aria-current='page']::after {
+  transform: scaleX(1);
+}
+
+/* Header-ul e sticky si are ~142px; fara marginea asta de derulare ar acoperi
+   inceputul sectiunii catre care sarim dintr-o ancora. Se aplica si la
+   navigarea nativa a browserului pe /#servicii, nu doar la click in meniu. */
+#home,
+#despre,
+#servicii,
+#produse,
+#contact {
+  scroll-margin-top: 154px;
+}
+
+/* ---------------------------------------------------------------
+   Meniul mobil, aspect sobru: randuri pline, separate prin linii
+   subtiri in verdele marcii diluat (nu gri neutru, ca sa se
+   asorteze cu bara de sus si cu restul paginii). Blocul vine la
+   finalul fisierului ca sa se aplice peste regulile anterioare.
+   --------------------------------------------------------------- */
+@media (max-width: 760px) {
+  .main-nav {
+    /* Fara padding, ca liniile sa mearga dintr-o margine in alta. */
+    padding: 0;
+    /* Regula de desktop pune gap 1.5rem intre linkuri; pe verticala asta
+       insemna 24px de gol intre randuri si facea liniile sa pluteasca. */
+    gap: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    /* Panou alb plin, fara blur: mai sobru si fara riscuri de lizibilitate. */
+    background: #fff;
+    border-color: rgba(17, 52, 46, 0.12);
+    box-shadow: 0 20px 44px rgba(17, 28, 25, 0.16);
+  }
+
+  .main-nav a {
+    width: 100%;
+    padding: 0.6rem 1.15rem;
+    border-radius: 0;
+    border-bottom: 2px solid rgba(17, 52, 46, 0.1);
+    /* Bara din stanga e transparenta in repaus: apare la hover si pe
+       pagina curenta, fara sa deplaseze textul. */
+    border-left: 3px solid transparent;
+    font-size: 0.97rem;
+    letter-spacing: 0.01em;
+    color: #17332d;
+    background: transparent;
+    transition: background 0.15s ease, border-left-color 0.15s ease, color 0.15s ease;
+  }
+
+  .main-nav a:last-child {
+    border-bottom: none;
+  }
+
+  .main-nav a:hover,
+  .main-nav a:focus-visible {
+    background: rgba(18, 53, 47, 0.05);
+    border-left-color: #18453d;
+    color: #103b34;
+  }
+
+  /* Pagina curenta: accentul rosu al marcii, acelasi ca pe desktop. */
+  .main-nav a[aria-current='page'] {
+    background: rgba(215, 47, 47, 0.05);
+    border-left-color: #d72f2f;
+    color: #d72f2f;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Sigla + flacara de gaz. Blocul vine la finalul fisierului ca sa
+   se aplice peste regulile anterioare.
+   --------------------------------------------------------------- */
+@media (max-width: 760px) {
+  /* Sigla mai mare pe telefon, cu bara de navigare crescuta pe masura
+     ca sa nu se lipeasca de marginile ei. */
+  .brand img {
+    max-height: 68px;
+  }
+
+  .nav-wrap {
+    min-height: 92px;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Pagina 404. Foloseste aceeasi paleta si aceleasi butoane ca restul
+   site-ului; nu introduce culori noi.
+   --------------------------------------------------------------- */
+.notfound-main {
+  display: flex;
+  align-items: center;
+  min-height: 58vh;
+}
+
+.notfound-hero {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 4rem 0 5rem;
+  text-align: center;
+}
+
+.notfound-code {
+  margin: 0.6rem 0 0.4rem;
+  font-size: clamp(5rem, 20vw, 9rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  /* Culoare plina, nu gradient cu background-clip: daca proprietatea nu e
+     suportata, un text transparent ar disparea complet. */
+  color: #18453d;
+}
+
+/* Zeroul din mijloc preia accentul rosu al marcii. */
+.notfound-code span {
+  color: #d72f2f;
+}
+
+.notfound-hero h1 {
+  margin: 0 0 1rem;
+}
+
+.notfound-text {
+  margin: 0 auto 2rem;
+  max-width: 34rem;
+  color: rgba(23, 51, 45, 0.78);
+}
+
+.notfound-text code {
+  padding: 0.15em 0.45em;
+  border-radius: 6px;
+  background: rgba(17, 52, 46, 0.07);
+  font-size: 0.92em;
+  word-break: break-all;
+}
+
+.notfound-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.notfound-links {
+  margin-top: 3rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid rgba(17, 52, 46, 0.1);
+  font-size: 0.92rem;
+  color: rgba(23, 51, 45, 0.7);
+}
+
+.notfound-links ul {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notfound-links a {
+  color: #17332d;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.notfound-links a:hover,
+.notfound-links a:focus-visible {
+  color: #d72f2f;
+  border-bottom-color: #d72f2f;
+}
+
+@media (max-width: 760px) {
+  .notfound-hero {
+    padding: 2.5rem 0 3.5rem;
+  }
+
+  .notfound-actions .btn {
+    width: 100%;
   }
 }

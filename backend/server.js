@@ -22,19 +22,48 @@ const FILE_STORAGE_DIR = path.join(PROJECT_ROOT, 'uploads')
 fs.mkdirSync(FILE_STORAGE_DIR, { recursive: true })
 
 const app = express()
+
+// Credentialele nu au valori de rezerva in cod. Daca o variabila lipseste,
+// procesul se opreste in loc sa porneasca tacut cu o parola cunoscuta.
+const requireEnv = (name) => {
+  const value = process.env[name]
+
+  if (!value) {
+    console.error(`[config] Variabila de mediu ${name} lipseste. Pornirea a fost oprita.`)
+    process.exit(1)
+  }
+
+  return value
+}
+
 const port = Number(process.env.PORT || 5000)
 const isProduction = process.env.NODE_ENV === 'production'
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173').split(',').map((origin) => origin.trim()).filter(Boolean)
-const ADMIN_USERNAME = process.env.FONTEGAS_ADMIN_USERNAME || 'fontegas'
-const ADMIN_PASSWORD = process.env.FONTEGAS_ADMIN_PASSWORD || 'Zx7!mP9&dQ2@vN5$L'
-const JWT_SECRET = process.env.JWT_SECRET
+const ADMIN_USERNAME = requireEnv('FONTEGAS_ADMIN_USERNAME')
+
+// Varianta preferata este hash-ul bcrypt: asa parola in clar nu mai trebuie
+// tinuta pe disc. Parola in clar ramane acceptata pentru compatibilitate.
+const ADMIN_PASSWORD_HASH = (process.env.FONTEGAS_ADMIN_PASSWORD_HASH || '').trim()
+
+if (ADMIN_PASSWORD_HASH && !/^\$2[aby]\$\d{2}\$.{53}$/.test(ADMIN_PASSWORD_HASH)) {
+  console.error('[config] FONTEGAS_ADMIN_PASSWORD_HASH nu este un hash bcrypt valid.')
+  process.exit(1)
+}
+
+const ADMIN_PASSWORD = ADMIN_PASSWORD_HASH ? '' : requireEnv('FONTEGAS_ADMIN_PASSWORD')
+const JWT_SECRET = requireEnv('JWT_SECRET')
+
+if (JWT_SECRET.length < 32) {
+  console.error('[config] JWT_SECRET trebuie sa aiba cel putin 32 de caractere.')
+  process.exit(1)
+}
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
+  host: requireEnv('DB_HOST'),
   port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || 'fontegas_app',
-  password: process.env.DB_PASSWORD || 'AppPass123!',
-  database: process.env.DB_NAME || 'fontegas_db',
+  user: requireEnv('DB_USER'),
+  password: requireEnv('DB_PASSWORD'),
+  database: requireEnv('DB_NAME'),
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -110,8 +139,33 @@ const formLimiter = rateLimit({
   },
 })
 
+// Autentificarea are limita proprie, mai stricta decat formularele publice:
+// fara ea parola de admin poate fi incercata la nesfarsit.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Autentificarile reusite nu consuma din limita, ca sa nu se blocheze
+  // administratorul care lucreaza normal.
+  skipSuccessfulRequests: true,
+  message: {
+    ok: false,
+    message: 'Prea multe încercări de autentificare. Încercați din nou peste 15 minute.',
+  },
+})
+
 app.use('/api/lead', formLimiter)
 app.use('/api/contact', formLimiter)
+app.use('/api/auth/login', loginLimiter)
+
+// In productie clientul primeste doar mesajul generic; detaliul intern
+// (eroare SQL, cale de fisier) ramane in jurnalul serverului. Cheile cu
+// valoarea undefined nu ajung in JSON-ul trimis.
+const errorDetail = (error) => {
+  console.error('[eroare]', error)
+  return isProduction ? undefined : error.message
+}
 
 const normalizeString = (value) => String(value || '').trim()
 
@@ -132,7 +186,7 @@ const parsePositiveInt = (value) => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
 }
 
-const { signAdminToken, requireAdminAuth } = createAdminAuth(JWT_SECRET)
+const { signAdminToken, requireAdminAuth, isAdminRequest } = createAdminAuth(JWT_SECRET)
 
 const resolveFullName = (...parts) =>
   parts
@@ -193,7 +247,7 @@ const ensureTableExists = async () => {
 }
 
 const ensureAdminUserRecord = async () => {
-  const passwordHash = await hashPassword(ADMIN_PASSWORD)
+  const passwordHash = ADMIN_PASSWORD_HASH || await hashPassword(ADMIN_PASSWORD)
 
   await pool.execute(
     `
@@ -278,7 +332,7 @@ app.get('/api/health', async (req, res) => {
     res.status(500).json({
       ok: false,
       message: 'Database connection failed',
-      error: error.message,
+      error: errorDetail(error),
     })
   }
 })
@@ -351,7 +405,7 @@ app.post('/api/auth/login', async (req, res) => {
       },
     })
   } catch (error) {
-    return res.status(500).json({ ok: false, message: 'Autentificarea a eșuat.', error: error.message })
+    return res.status(500).json({ ok: false, message: 'Autentificarea a eșuat.', error: errorDetail(error) })
   }
 })
 
@@ -383,7 +437,7 @@ app.get('/api/requests', requireAdminAuth, async (req, res) => {
     res.status(500).json({
       ok: false,
       message: 'Nu s-au putut încărca cererile.',
-      error: error.message,
+      error: errorDetail(error),
     })
   }
 })
@@ -416,7 +470,7 @@ app.delete('/api/requests/:id', requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: 'A apărut o eroare la ștergerea cererii.',
-      error: error.message,
+      error: errorDetail(error),
     })
   }
 })
@@ -449,7 +503,7 @@ app.delete('/api/leads/:id', requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: 'A apărut o eroare la ștergerea lead-ului.',
-      error: error.message,
+      error: errorDetail(error),
     })
   }
 })
@@ -489,7 +543,7 @@ app.get('/api/documents/admin', requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: 'Nu s-au putut încărca documentele din admin.',
-      error: error.message,
+      error: errorDetail(error),
     })
   }
 })
@@ -531,7 +585,7 @@ app.post('/api/documents', requireAdminAuth, upload.single('file'), async (req, 
     return res.status(500).json({
       ok: false,
       message: 'A apărut o eroare la încărcarea documentului.',
-      error: error.message,
+      error: errorDetail(error),
     })
   }
 })
@@ -576,7 +630,7 @@ app.put('/api/documents/:id', requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: 'A apărut o eroare la actualizarea documentului.',
-      error: error.message,
+      error: errorDetail(error),
     })
   }
 })
@@ -622,32 +676,71 @@ app.delete('/api/documents/:id', requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: 'A apărut o eroare la ștergerea documentului.',
-      error: error.message,
+      error: errorDetail(error),
     })
   }
 })
 
-app.get('/files/:fileName', (req, res) => {
+// Verifica daca o cale rezolvata se afla cu adevarat in interiorul unui
+// director. Comparatia pe prefix de sir ar accepta si "/srv/proiect-altceva".
+const isInsideDirectory = (candidatePath, directoryPath) => {
+  const relative = path.relative(directoryPath, candidatePath)
+  return Boolean(relative) && !relative.startsWith('..') && !path.isAbsolute(relative)
+}
+
+app.get('/files/:fileName', async (req, res) => {
   try {
     const rawName = decodeURIComponent(req.params.fileName || '')
+
+    // Acceptam doar un nume simplu de fisier: fara separatoare de cale, fara "..".
+    if (!rawName || rawName !== path.basename(rawName) || rawName === '.' || rawName === '..') {
+      return res.status(400).json({ ok: false, message: 'Nume de fișier invalid.' })
+    }
+
     const allowedExtensions = new Set(['.pdf', '.doc', '.docx'])
     const extension = path.extname(rawName).toLowerCase()
 
-    if (!rawName || !allowedExtensions.has(extension)) {
+    if (!allowedExtensions.has(extension)) {
       return res.status(400).json({ ok: false, message: 'Tip de fișier nepermis.' })
     }
 
-    const legacyPath = path.resolve(PROJECT_ROOT, rawName)
-    const uploadedPath = path.resolve(FILE_STORAGE_DIR, rawName)
-    const safeFilePath = fs.existsSync(uploadedPath) ? uploadedPath : legacyPath
+    // Documentele nepublicate raman accesibile doar administratorului.
+    // Daca baza de date nu raspunde, ne bazam pe catalogul din cod, care
+    // contine doar documentele publice ale proiectului.
+    let isAllowed = false
 
-    if (!safeFilePath.startsWith(PROJECT_ROOT) || !fs.existsSync(safeFilePath)) {
+    try {
+      const [rows] = await pool.execute(
+        'SELECT is_published AS isPublished FROM documents WHERE file_name = ? LIMIT 1',
+        [rawName],
+      )
+
+      if (rows.length > 0) {
+        isAllowed = rows[0].isPublished === 1 || isAdminRequest(req)
+      }
+    } catch {
+      isAllowed = documentCatalog.some((document) => document.fileName === rawName)
+    }
+
+    if (!isAllowed) {
+      return res.status(404).json({ ok: false, message: 'Fișierul nu a fost găsit.' })
+    }
+
+    const uploadedPath = path.resolve(FILE_STORAGE_DIR, rawName)
+    const legacyPath = path.resolve(PROJECT_ROOT, rawName)
+
+    const safeFilePath = isInsideDirectory(uploadedPath, FILE_STORAGE_DIR) && fs.existsSync(uploadedPath)
+      ? uploadedPath
+      : legacyPath
+
+    if (!isInsideDirectory(safeFilePath, PROJECT_ROOT) || !fs.existsSync(safeFilePath)) {
       return res.status(404).json({ ok: false, message: 'Fișierul nu a fost găsit.' })
     }
 
     return res.download(safeFilePath)
-  } catch (error) {
-    return res.status(500).json({ ok: false, message: 'Eroare la accesarea fișierului.', error: error.message })
+  } catch {
+    // Mesajul de eroare nu mai expune detalii interne catre client.
+    return res.status(500).json({ ok: false, message: 'Eroare la accesarea fișierului.' })
   }
 })
 
@@ -678,7 +771,7 @@ app.get('/api/leads', requireAdminAuth, async (req, res) => {
     res.status(500).json({
       ok: false,
       message: 'Nu s-au putut încărca lead-urile.',
-      error: error.message,
+      error: errorDetail(error),
     })
   }
 })
@@ -733,7 +826,7 @@ app.post('/api/contact', async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: 'A apărut o eroare la salvarea mesajului.',
-      error: error.message,
+      error: errorDetail(error),
     })
   }
 })
@@ -789,7 +882,7 @@ app.post('/api/lead', async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: 'A apărut o eroare la salvarea solicitării.',
-      error: error.message,
+      error: errorDetail(error),
     })
   }
 })
