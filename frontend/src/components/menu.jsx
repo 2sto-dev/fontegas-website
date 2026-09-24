@@ -164,13 +164,34 @@ export default function Menu({ home = false, contact = false }) {
           })}
         </nav>
 
-        <Link
-          className="contact-pill"
-          to={contact ? '/' : '/contact'}
-          aria-current={!contact && location.pathname === '/contact' ? 'page' : undefined}
-        >
-          {contact ? 'Înapoi acasă' : 'Contact'}
-        </Link>
+        <div className="nav-actions">
+          {/* Duce in panoul de administrare; cine nu e autentificat e trimis
+              automat la /fontegas/login de catre ProtectedRoute. */}
+          <Link className="login-pill" to="/fontegas">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <rect x="4" y="10.5" width="16" height="10.5" rx="2.5" />
+              <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+            </svg>
+            Login
+          </Link>
+
+          <Link
+            className="contact-pill"
+            to={contact ? '/' : '/contact'}
+            aria-current={!contact && location.pathname === '/contact' ? 'page' : undefined}
+          >
+            {contact ? 'Înapoi acasă' : 'Contact'}
+          </Link>
+        </div>
       </div>
     </header>
   )

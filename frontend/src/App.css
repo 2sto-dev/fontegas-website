@@ -1893,3 +1893,65 @@
     width: 100%;
   }
 }
+
+/* ---------------------------------------------------------------
+   Butonul de login, langa cel de contact. Discret intentionat: rosul
+   plin ramane al apelului la actiune pentru clienti, iar login-ul e
+   un contur simplu ca sa nu concureze cu el.
+   --------------------------------------------------------------- */
+.nav-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 0 0 auto;
+}
+
+.login-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 1.05rem;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 52, 46, 0.18);
+  background: transparent;
+  color: #17332d;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.login-pill svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.login-pill:hover,
+.login-pill:focus-visible {
+  border-color: #18453d;
+  background: rgba(18, 53, 47, 0.05);
+  color: #103b34;
+}
+
+@media (max-width: 960px) {
+  /* Bara devine stramta inainte de pragul de mobil: pastram doar iconita. */
+  .login-pill {
+    padding: 0.7rem 0.85rem;
+    font-size: 0;
+    gap: 0;
+  }
+
+  .login-pill svg {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+@media (max-width: 760px) {
+  /* Sub pragul de mobil dispar amandoua, ca pana acum. */
+  .nav-actions {
+    display: none;
+  }
+}
