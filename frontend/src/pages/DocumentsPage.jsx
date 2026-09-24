@@ -2,6 +2,7 @@ import { apiFetch, apiUrl } from '../api.jsx'
 import Menu from '../components/menu.jsx'
 import { useEffect, useMemo, useState } from 'react'
 import '../App.css'
+import { useSeo } from '../seo.js'
 
 const categoryLabels = {
   all: 'Toate',
@@ -12,6 +13,12 @@ const categoryLabels = {
 }
 
 function DocumentsPage() {
+  useSeo({
+    titlu: 'Documente oficiale și rapoarte Seveso | Fontegas',
+    descriere:
+      'Rapoarte de securitate, rapoarte de inspecție Seveso și planul de urgență internă, disponibile pentru descărcare.',
+  })
+
   const [documents, setDocuments] = useState([])
   const [activeCategory, setActiveCategory] = useState('all')
   const [sortBy, setSortBy] = useState('date-desc')

@@ -1,5 +1,6 @@
 import Menu from '../components/menu.jsx'
 import '../App.css'
+import { useSeo } from '../seo.js'
 
 const utilPoints = [
   'La fiecare montare nouă a buteliei se va utiliza o garnitură de etanșare nouă, între robinetul buteliei și regulatorul de presiune, montată obligatoriu în locul celei vechi.',
@@ -11,6 +12,12 @@ const utilPoints = [
 ]
 
 function UtilPage() {
+  useSeo({
+    titlu: 'Siguranța buteliilor de aragaz — instrucțiuni | Fontegas',
+    descriere:
+      'Cum se montează garnitura, cum se verifică etanșeitatea cu spumă de săpun și ce se face când se simte miros de gaz.',
+  })
+
 
   return (
     <div className="site-shell">

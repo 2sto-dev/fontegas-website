@@ -1,6 +1,7 @@
 import Menu from './components/menu.jsx'
 import { Link } from 'react-router-dom'
 import './App.css'
+import { useSeo } from './seo.js'
 
 const stats = [
   { label: 'Ani de experiență', value: '10+' },
@@ -55,6 +56,12 @@ const differentiators = [
 const trustPoints = ['GPL auto', 'Distribuție locală', 'Stocare sigură', 'Consultanță tehnică']
 
 function App() {
+  useSeo({
+    titlu: 'Fontegas — Soluții sigure pentru energie și mobilitate',
+    descriere:
+      'Distribuitor GPL în județul Mehedinți: propan comercial, GPL auto, butelii de aragaz și instalații de alimentare. Stație proprie în Simian, pe E70.',
+  })
+
 
   return (
     <div className="site-shell">
@@ -76,7 +83,7 @@ function App() {
         <section className="hero container">
           <div className="hero__content">
             <span className="eyebrow">Gaz lichefiat • GPL auto • instalații</span>
-            <h1>Solutii sigure pentru energie și mobilitate.</h1>
+            <h1>Soluții sigure pentru energie și mobilitate.</h1>
             <p>
               Facilităm furnizarea de GPL, distribuția și instalarea de echipamente pentru
               clienți casnici și industriali, cu o abordare modernă, clară și responsabilă.

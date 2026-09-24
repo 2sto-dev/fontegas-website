@@ -2,6 +2,7 @@ import { apiFetch } from '../api.jsx'
 import Menu from '../components/menu.jsx'
 import { useState } from 'react'
 import '../App.css'
+import { useSeo } from '../seo.js'
 
 const initialFormState = {
   companyName: '',
@@ -33,6 +34,12 @@ const ofertaItems = [
 ]
 
 function OfertaPage() {
+  useSeo({
+    titlu: 'Ofertă GPL: propan, autogas și butelii | Fontegas',
+    descriere:
+      'Distribuție propan comercial în sistem mic vrac, GPL auto și butelii de aragaz de 26 l. Peste 250 de contracte în județul Mehedinți.',
+  })
+
   const [formValues, setFormValues] = useState(initialFormState)
   const [submitState, setSubmitState] = useState({ status: 'idle', message: '' })
 

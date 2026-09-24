@@ -1,6 +1,7 @@
 import { apiUrl } from '../api.jsx'
 import Menu from '../components/menu.jsx'
 import '../App.css'
+import { useSeo } from '../seo.js'
 
 const emergencyHighlights = [
   { label: 'Locație', value: 'Simian, județul Mehedinți' },
@@ -43,6 +44,12 @@ const emergencyContacts = [
 ]
 
 function PlanUrgentaPage() {
+  useSeo({
+    titlu: 'Plan de urgență și proceduri de intervenție | Fontegas',
+    descriere:
+      'Proceduri operaționale pentru intervenție rapidă și prevenirea incidentelor la instalațiile de gaz petrolier lichefiat.',
+  })
+
 
   return (
     <div className="site-shell">

@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import Menu from '../components/menu.jsx'
 import '../App.css'
+import { useSeo } from '../seo.js'
 
 // Legaturile utile de pe pagina de eroare: cineva care a nimerit gresit are
 // nevoie de o cale inapoi, nu doar de un mesaj.
@@ -13,6 +14,13 @@ const scurtaturi = [
 ]
 
 function NotFoundPage() {
+  useSeo({
+    titlu: 'Pagina nu există | Fontegas',
+    descriere:
+      'Adresa căutată nu duce nicăieri pe acest site.',
+    indexabil: false,
+  })
+
   const location = useLocation()
 
   return (

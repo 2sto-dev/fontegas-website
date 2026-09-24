@@ -3,6 +3,7 @@ import Menu from '../components/menu.jsx'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import '../App.css'
+import { useSeo } from '../seo.js'
 
 const initialFormState = {
   EmailFrom: '',
@@ -16,6 +17,12 @@ const initialFormState = {
 }
 
 function ContactPage() {
+  useSeo({
+    titlu: 'Contact — Fontegas Roccadaspide Italia SRL',
+    descriere:
+      'Fontegas Roccadaspide Italia SRL, Simian, județul Mehedinți, pe E70. Telefon 0731 315 780. Trimiteți-ne o cerere de ofertă.',
+  })
+
   const [formValues, setFormValues] = useState(initialFormState)
   const [submitState, setSubmitState] = useState({
     status: 'idle',
